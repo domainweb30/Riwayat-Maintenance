@@ -1,0 +1,12 @@
+import { equipment } from "./config.js";
+const $=id=>document.getElementById(id);
+let editingId=null;
+function readForm(){return {equipmentId:$("equipmentInput").value,date:$("dateInput").value,type:$("typeInput").value,condition:$("conditionInput").value.trim(),cause:$("causeInput").value.trim(),action:$("actionInput").value.trim(),parts:$("partsInput").value.trim(),person:$("personInput").value.trim(),responseHours:Number($("responseInput").value||0),downtimeHours:Number($("downtimeInput").value||0),cost:Number($("costInput").value||0),verification:$("verificationInput").value,nextDate:$("nextDateInput").value}}
+function fillForm(record){const vals={equipmentInput:record.equipmentId,dateInput:record.date,typeInput:record.type,conditionInput:record.condition,causeInput:record.cause,actionInput:record.action,partsInput:record.parts,personInput:record.person,responseInput:record.responseHours,downtimeInput:record.downtimeHours,costInput:record.cost,verificationInput:record.verification,nextDateInput:record.nextDate};Object.entries(vals).forEach(([id,v])=>$(id).value=v??"")}
+export function setupForm({getRecords,setRecords,rerender}){
+ const dialog=$("maintenanceDialog"),form=$("maintenanceForm");
+ $("addMaintenanceBtn").addEventListener("click",()=>{editingId=null;form.reset();$("formTitle").textContent="Catat Maintenance";$("dateInput").value=new Date().toISOString().slice(0,10);$("responseInput").value=0;$("downtimeInput").value=0;$("costInput").value=0;dialog.showModal()});
+ ["closeDialogBtn","cancelBtn"].forEach(id=>$(id).addEventListener("click",()=>dialog.close()));
+ form.addEventListener("submit",e=>{e.preventDefault();const item=readForm();if(!item.date||!item.condition||!item.action){alert("Tanggal, gangguan/kondisi, dan tindakan wajib diisi.");return}const records=getRecords();if(editingId!==null){const idx=records.findIndex(r=>r.id===editingId);if(idx>-1)records[idx]={...records[idx],...item}}else records.push({...item,id:Date.now()});setRecords(records);dialog.close();rerender()});
+ document.querySelector("#historyBody").addEventListener("table-rendered",e=>{e.detail.filtered.forEach(r=>{const editBtn=document.querySelector(`[data-edit="${r.id}"]`);if(editBtn)editBtn.onclick=()=>{editingId=r.id;fillForm(r);$("formTitle").textContent="Edit Catatan Maintenance";dialog.showModal()};const delBtn=document.querySelector(`[data-delete="${r.id}"]`);if(delBtn)delBtn.onclick=()=>{if(confirm("Hapus catatan ini?")){setRecords(getRecords().filter(x=>x.id!==r.id));rerender()}}})});
+}
